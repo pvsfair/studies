@@ -1,18 +1,15 @@
 import { Form, LoaderFunctionArgs, useFetcher, useLoaderData } from 'react-router-dom';
 import { ActionFunctionArgs } from 'react-router-dom';
-import { getContact, updateContact } from '../contacts';
+import { ContactElement, getContact, updateContact } from '../contacts';
 
-export type ContactElement = {
-  id: string;
-  first: string;
-  last: string;
-  avatar: string;
-  twitter: string;
-  notes: string;
-  favorite: boolean;
-};
-
-export async function loader({ params }: LoaderFunctionArgs) {
+export async function loader({
+  params,
+}: LoaderFunctionArgs): Promise<{ contact: ContactElement }> {
+  if (!params.contactId)
+    throw new Response('', {
+      status: 404,
+      statusText: 'Not Found',
+    });
   const contact = await getContact(params.contactId);
   if (!contact)
     throw new Response('', {
@@ -23,6 +20,11 @@ export async function loader({ params }: LoaderFunctionArgs) {
 }
 
 export async function action({ request, params }: ActionFunctionArgs) {
+  if (!params.contactId)
+    throw new Response('', {
+      status: 404,
+      statusText: 'Not Found',
+    });
   const formData = await request.formData();
   return updateContact(params.contactId, {
     favorite: formData.get('favorite') === 'true',
@@ -30,7 +32,7 @@ export async function action({ request, params }: ActionFunctionArgs) {
 }
 
 export default function Contact() {
-  const { contact } = useLoaderData();
+  const { contact } = useLoaderData() as Awaited<ReturnType<typeof loader>>;
 
   return (
     <div id='contact'>
